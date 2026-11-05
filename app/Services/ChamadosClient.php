@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AtestadoFilho;
 use App\Models\AtestadoPedido;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -103,6 +104,16 @@ class ChamadosClient
     {
         $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/cancel?".http_build_query(['cpf' => $filho->pedido->cpf]));
 
-        return $resp->successful();
+        return $resp->successful() || $this->pedidoRemovido($resp);
+    }
+
+    /**
+     * 404 do chamados para um protocolo = pedido já excluído lá: encerra o reenvio automático.
+     * Um 404 de ROTA inexistente ("The route ... could not be found", endpoint ainda não publicado) NÃO conta:
+     * nesse caso o aviso continua pendente.
+     */
+    private function pedidoRemovido(Response $resp): bool
+    {
+        return $resp->status() === 404 && ! str_contains((string) $resp->json('message'), 'could not be found');
     }
 }

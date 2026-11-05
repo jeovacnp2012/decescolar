@@ -234,6 +234,26 @@ segundo", Storage::disk('local')->get($novo));
         $this->assertNotNull($filho->fresh()->cancelamento_avisado_em);
     }
 
+    public function test_404_do_chamados_para_protocolo_excluido_encerra_o_reenvio_mas_rota_inexistente_nao(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        $a = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        $b = AtestadoFilho::where('protocolo', 'ATV000002')->first();
+
+        Http::fake(['*/vaccination/requests/*/cancel*' => Http::sequence()
+            ->push(['message' => 'The route api/v1/vaccination/requests/ATV000001/cancel could not be found.'], 404)
+            ->push(['message' => 'Pedido não encontrado.'], 404)]);
+
+        // rota ainda não publicada no chamados: continua pendente
+        $this->post(route('atestado.cancelar', $a->token));
+        $this->assertNull($a->fresh()->cancelamento_avisado_em);
+
+        // pedido já excluído no chamados: encerra o reenvio
+        $this->post(route('atestado.cancelar', $b->token));
+        $this->assertNotNull($b->fresh()->cancelamento_avisado_em);
+    }
+
     public function test_unidade_exclui_no_chamados_e_decescolar_marca_cancelado_com_motivo_de_forma_idempotente(): void
     {
         $this->fakeChamados();
