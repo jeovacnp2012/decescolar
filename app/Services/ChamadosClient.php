@@ -28,19 +28,27 @@ class ChamadosClient
     /** @return array<int, array{id:int,name:string}> */
     public function unidades(): array
     {
-        $ttl = now()->addMinutes(config('chamados.units_cache_minutes'));
+        $cached = Cache::get('chamados.unidades');
+        if (! empty($cached)) {
+            return $cached;
+        }
 
-        return Cache::remember('chamados.unidades', $ttl, function () {
-            $resp = $this->http()->get('/vaccination/units');
-            if (! $resp->successful()) {
-                throw new RuntimeException('Não foi possível carregar as unidades de saúde ('.$resp->status().').');
-            }
+        $resp = $this->http()->get('/vaccination/units');
+        if (! $resp->successful()) {
+            throw new RuntimeException('Não foi possível carregar as unidades de saúde ('.$resp->status().').');
+        }
 
-            return collect($resp->json('data', []))
-                ->map(fn ($u) => ['id' => (int) $u['id'], 'name' => (string) $u['name']])
-                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-                ->values()->all();
-        });
+        $unidades = collect($resp->json('data', []))
+            ->map(fn ($u) => ['id' => (int) $u['id'], 'name' => (string) $u['name']])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()->all();
+
+        // Lista vazia nunca vai para o cache: assim que uma unidade for marcada no chamados, ela aparece.
+        if ($unidades !== []) {
+            Cache::put('chamados.unidades', $unidades, now()->addMinutes(config('chamados.units_cache_minutes')));
+        }
+
+        return $unidades;
     }
 
     /** Envia o pedido ao chamados e grava o protocolo de cada filho (mesma ordem do envio). */
