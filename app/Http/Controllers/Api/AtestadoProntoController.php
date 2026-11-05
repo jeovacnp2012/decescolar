@@ -7,6 +7,7 @@ use App\Models\AtestadoFilho;
 use App\Services\AtestadoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class AtestadoProntoController extends Controller
@@ -38,6 +39,35 @@ class AtestadoProntoController extends Controller
         }
 
         return response()->json(['data' => $this->apresentar($filho)]);
+    }
+
+    /**
+     * POST /api/v1/atestados/{protocolo}/cancelado — a unidade de saúde excluiu o pedido no chamados.
+     * JSON: protocol, external_id, status="canceled", message, reason, child_name, guardian_cpf, unit, canceled_at.
+     * O chamados só exclui se receber 2xx; por isso é idempotente e responde 2xx também para protocolo desconhecido ou já cancelado.
+     */
+    public function cancelado(Request $request, string $protocolo): JsonResponse
+    {
+        $filho = AtestadoFilho::where('protocolo', strtoupper($protocolo))->first();
+        if (! $filho) {
+            return response()->json(['data' => ['protocolo' => strtoupper($protocolo), 'status' => 'desconhecido']]);
+        }
+
+        if ($filho->status !== AtestadoFilho::CANCELADO) {
+            if ($filho->arquivo) {
+                Storage::disk('local')->delete($filho->arquivo);
+            }
+            $filho->update([
+                'status' => AtestadoFilho::CANCELADO,
+                'cancelado_em' => $request->date('canceled_at') ?? now(),
+                'cancelado_por' => 'unidade',
+                'cancelado_motivo' => $request->filled('reason') ? mb_substr((string) $request->input('reason'), 0, 1000) : null,
+                'cancelamento_avisado_em' => now(), // o chamados já sabe: foi ele quem excluiu
+                'arquivo' => null,
+            ]);
+        }
+
+        return response()->json(['data' => $this->apresentar($filho->fresh())]);
     }
 
     /** GET /api/v1/atestados/{protocolo} — situação do atestado no decescolar. */

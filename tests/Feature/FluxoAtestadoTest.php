@@ -234,6 +234,32 @@ segundo", Storage::disk('local')->get($novo));
         $this->assertNotNull($filho->fresh()->cancelamento_avisado_em);
     }
 
+    public function test_unidade_exclui_no_chamados_e_decescolar_marca_cancelado_com_motivo_de_forma_idempotente(): void
+    {
+        $this->fakeChamados();
+        $this->postJson('/api/v1/atestados/ATV000001/cancelado')->assertStatus(401);
+        $this->post('/pedido', $this->dadosValidos());
+        $this->enviarPdf('ATV000001')->assertOk();
+        $filho = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        $arquivo = $filho->arquivo;
+
+        $corpo = ['protocol' => 'ATV000001', 'status' => 'canceled', 'message' => 'Pedido removido do sistema. Por favor, refaça o pedido.',
+            'reason' => 'Dados do filho incorretos', 'canceled_at' => now()->toIso8601String()];
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/cancelado', $corpo)
+            ->assertOk()->assertJsonPath('data.status', 'cancelado');
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/atv000001/cancelado', $corpo)->assertOk(); // repetir é inofensivo
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV999999/cancelado', $corpo)->assertOk(); // desconhecido também é 2xx
+
+        $filho->refresh();
+        $this->assertSame('unidade', $filho->cancelado_por);
+        $this->assertSame('Dados do filho incorretos', $filho->cancelado_motivo);
+        $this->assertNotNull($filho->cancelamento_avisado_em);
+        Storage::disk('local')->assertMissing($arquivo);
+        $this->get(route('atestado.show', $filho->token))->assertOk()
+            ->assertSee('Pedido removido do sistema')->assertSee('Dados do filho incorretos')->assertSee('Fazer novo pedido');
+        $this->enviarPdf('ATV000001')->assertStatus(409);
+    }
+
     public function test_pedido_ja_baixado_nao_pode_ser_cancelado_e_pdf_de_cancelado_e_recusado(): void
     {
         $this->fakeChamados();

@@ -34,7 +34,7 @@ class AtestadoController extends Controller
         if ($filho->arquivo) {
             Storage::disk('local')->delete($filho->arquivo);
         }
-        $filho->update(['status' => AtestadoFilho::CANCELADO, 'cancelado_em' => now(), 'arquivo' => null]);
+        $filho->update(['status' => AtestadoFilho::CANCELADO, 'cancelado_em' => now(), 'cancelado_por' => 'responsavel', 'arquivo' => null]);
 
         // Avisa a unidade. Se o chamados estiver fora do ar, o comando atestados:avisar-atendidos repete depois.
         try {

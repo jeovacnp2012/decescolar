@@ -21,7 +21,14 @@
     @endif
 
     @if ($filho->status === 'cancelado')
-        <div class="alerta info">Este pedido foi cancelado em {{ $filho->cancelado_em?->format('d/m/Y H:i') }}. Se precisar da declaração, faça um novo pedido.</div>
+        @if ($filho->cancelado_por === 'unidade')
+            <div class="alerta info">
+                <strong>Pedido removido do sistema.</strong> Por favor, refaça o pedido.
+                @if ($filho->cancelado_motivo)<br>Motivo informado pela unidade de saúde: {{ $filho->cancelado_motivo }}@endif
+            </div>
+        @else
+            <div class="alerta info">Este pedido foi cancelado em {{ $filho->cancelado_em?->format('d/m/Y H:i') }}. Se precisar da declaração, faça um novo pedido.</div>
+        @endif
         <a class="btn contorno" href="{{ route('pedido.create') }}">Fazer novo pedido</a>
     @elseif ($filho->disponivel())
         <a class="btn limao" href="{{ route('atestado.baixar', $filho->token) }}" download>⬇ Baixar declaração vacinal (PDF)</a>
