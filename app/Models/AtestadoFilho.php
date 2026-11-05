@@ -10,6 +10,7 @@ class AtestadoFilho extends Model
     public const AGUARDANDO = 'aguardando';
     public const PRONTO = 'pronto';
     public const BAIXADO = 'baixado';
+    public const CANCELADO = 'cancelado';
 
     protected $guarded = [];
 
@@ -19,6 +20,8 @@ class AtestadoFilho extends Model
             'data_nascimento' => 'date',
             'pronto_em' => 'datetime',
             'baixado_em' => 'datetime',
+            'cancelado_em' => 'datetime',
+            'cancelamento_avisado_em' => 'datetime',
             'email_enviado_em' => 'datetime',
         ];
     }
@@ -33,8 +36,15 @@ class AtestadoFilho extends Model
         return match ($this->status) {
             self::PRONTO => 'Pronto para baixar',
             self::BAIXADO => 'Baixado',
+            self::CANCELADO => 'Pedido cancelado',
             default => 'Aguardando a unidade de saúde',
         };
+    }
+
+    /** O responsável só cancela enquanto a unidade não atendeu (ainda não baixou o PDF). */
+    public function podeCancelar(): bool
+    {
+        return in_array($this->status, [self::AGUARDANDO, self::PRONTO], true);
     }
 
     public function disponivel(): bool

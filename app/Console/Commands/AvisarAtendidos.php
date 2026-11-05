@@ -36,7 +36,27 @@ class AvisarAtendidos extends Command
                 }
             });
 
-        $this->info("Avisos de atendimento enviados: {$avisados}");
+        $cancelados = 0;
+
+        AtestadoFilho::with('pedido')
+            ->where('status', AtestadoFilho::CANCELADO)
+            ->whereNull('cancelamento_avisado_em')
+            ->whereNotNull('protocolo')
+            ->orderBy('id')
+            ->chunkById(50, function ($filhos) use ($chamados, &$cancelados) {
+                foreach ($filhos as $filho) {
+                    try {
+                        if ($chamados->avisarCancelamento($filho)) {
+                            $filho->update(['cancelamento_avisado_em' => now()]);
+                            $cancelados++;
+                        }
+                    } catch (Throwable $e) {
+                        report($e);
+                    }
+                }
+            });
+
+        $this->info("Avisos de atendimento enviados: {$avisados}; avisos de cancelamento enviados: {$cancelados}");
 
         return self::SUCCESS;
     }

@@ -14,3 +14,4 @@ Route::post('/consultar', [ConsultaController::class, 'buscar'])->middleware('th
 
 Route::get('/atestado/{token}', [AtestadoController::class, 'show'])->name('atestado.show');
 Route::get('/atestado/{token}/baixar', [AtestadoController::class, 'baixar'])->name('atestado.baixar');
+Route::post('/atestado/{token}/cancelar', [AtestadoController::class, 'cancelar'])->middleware('throttle:10,1')->name('atestado.cancelar');

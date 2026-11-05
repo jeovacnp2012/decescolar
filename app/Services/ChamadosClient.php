@@ -97,4 +97,12 @@ class ChamadosClient
 
         return $resp->successful();
     }
+
+    /** Avisa o chamados que o responsável cancelou o pedido (POST /vaccination/requests/{protocolo}/cancel?cpf=). Só 2xx conta como avisado. */
+    public function avisarCancelamento(AtestadoFilho $filho): bool
+    {
+        $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/cancel?".http_build_query(['cpf' => $filho->pedido->cpf]));
+
+        return $resp->successful();
+    }
 }

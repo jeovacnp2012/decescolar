@@ -25,6 +25,10 @@ class AtestadoProntoController extends Controller
             return response()->json(['message' => 'Protocolo não encontrado.'], 404);
         }
 
+        if ($filho->status === AtestadoFilho::CANCELADO) {
+            return response()->json(['message' => 'Pedido cancelado pelo responsável; o atestado não será recebido.'], 409);
+        }
+
         try {
             $filho = $servico->receberPdf($filho, file_get_contents($request->file('certificate')->getRealPath()));
         } catch (Throwable $e) {
@@ -53,6 +57,7 @@ class AtestadoProntoController extends Controller
             'status' => $f->status,
             'pronto_em' => $f->pronto_em?->toIso8601String(),
             'baixado_em' => $f->baixado_em?->toIso8601String(),
+            'cancelado_em' => $f->cancelado_em?->toIso8601String(),
         ];
     }
 }

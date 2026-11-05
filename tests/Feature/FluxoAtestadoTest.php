@@ -192,4 +192,63 @@ segundo", Storage::disk('local')->get($novo));
         $this->post('/consultar', ['cpf' => '529.982.247-25', 'protocolo' => 'atv000001'])->assertRedirect(route('atestado.show', $filho->token));
         $this->post('/consultar', ['cpf' => '111.444.777-35', 'protocolo' => 'ATV000001'])->assertSessionHasErrors('protocolo');
     }
+
+    public function test_responsavel_cancela_pedido_apaga_pdf_e_avisa_a_unidade(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        $this->enviarPdf('ATV000001')->assertOk();
+        $filho = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        $arquivo = $filho->arquivo;
+        Storage::disk('local')->assertExists($arquivo);
+        Http::fake(['*/vaccination/requests/*/cancel*' => Http::response([], 200)]);
+
+        $this->post(route('atestado.cancelar', $filho->token))->assertRedirect(route('atestado.show', $filho->token));
+
+        $filho->refresh();
+        $this->assertSame('cancelado', $filho->status);
+        $this->assertNotNull($filho->cancelado_em);
+        $this->assertNotNull($filho->cancelamento_avisado_em);
+        $this->assertNull($filho->arquivo);
+        Storage::disk('local')->assertMissing($arquivo);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/vaccination/requests/ATV000001/cancel') && str_contains($r->url(), 'cpf=52998224725'));
+        $this->get(route('atestado.show', $filho->token))->assertOk()->assertSee('Pedido cancelado')->assertDontSee('Baixar declaração');
+        $this->get(route('atestado.baixar', $filho->token))->assertNotFound();
+        // o irmão não é afetado
+        $this->assertSame('aguardando', AtestadoFilho::where('protocolo', 'ATV000002')->value('status'));
+    }
+
+    public function test_cancelamento_com_chamados_fora_do_ar_fica_pendente_e_o_comando_reenvia(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        $filho = AtestadoFilho::where('protocolo', 'ATV000002')->first();
+
+        Http::fake(['*/vaccination/requests/*/cancel*' => Http::sequence()->push([], 503)->push([], 200)]);
+        $this->post(route('atestado.cancelar', $filho->token))->assertRedirect();
+        $filho->refresh();
+        $this->assertSame('cancelado', $filho->status);
+        $this->assertNull($filho->cancelamento_avisado_em);
+
+        $this->artisan('atestados:avisar-atendidos')->assertSuccessful();
+        $this->assertNotNull($filho->fresh()->cancelamento_avisado_em);
+    }
+
+    public function test_pedido_ja_baixado_nao_pode_ser_cancelado_e_pdf_de_cancelado_e_recusado(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        $this->enviarPdf('ATV000001')->assertOk();
+        $baixado = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        Http::fake(['*/vaccination/requests/*/served*' => Http::response([], 200), '*/vaccination/requests/*/cancel*' => Http::response([], 200)]);
+        $this->get(route('atestado.baixar', $baixado->token))->assertOk();
+
+        $this->post(route('atestado.cancelar', $baixado->token))->assertRedirect()->assertSessionHas('aviso');
+        $this->assertSame('baixado', $baixado->fresh()->status);
+
+        $cancelado = AtestadoFilho::where('protocolo', 'ATV000002')->first();
+        $this->post(route('atestado.cancelar', $cancelado->token));
+        $this->enviarPdf('ATV000002')->assertStatus(409);
+        $this->assertNull($cancelado->fresh()->arquivo);
+    }
 }
