@@ -104,7 +104,8 @@ class ChamadosClient
     {
         $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/cancel?".http_build_query(['cpf' => $filho->pedido->cpf]));
 
-        return $resp->successful() || $this->pedidoRemovido($resp);
+        // 409 = a unidade já atendeu o pedido: o aviso não tem mais efeito, encerra o reenvio.
+        return $resp->successful() || $resp->status() === 409 || $this->pedidoRemovido($resp);
     }
 
     /**

@@ -243,7 +243,8 @@ segundo", Storage::disk('local')->get($novo));
 
         Http::fake(['*/vaccination/requests/*/cancel*' => Http::sequence()
             ->push(['message' => 'The route api/v1/vaccination/requests/ATV000001/cancel could not be found.'], 404)
-            ->push(['message' => 'Pedido não encontrado.'], 404)]);
+            ->push(['message' => 'Pedido não encontrado.'], 404)
+            ->push(['message' => 'Já atendido.'], 409)]);
 
         // rota ainda não publicada no chamados: continua pendente
         $this->post(route('atestado.cancelar', $a->token));
@@ -252,6 +253,10 @@ segundo", Storage::disk('local')->get($novo));
         // pedido já excluído no chamados: encerra o reenvio
         $this->post(route('atestado.cancelar', $b->token));
         $this->assertNotNull($b->fresh()->cancelamento_avisado_em);
+
+        // 409 (unidade já atendeu): também encerra o reenvio automático
+        $this->artisan('atestados:avisar-atendidos')->assertSuccessful();
+        $this->assertNotNull($a->fresh()->cancelamento_avisado_em);
     }
 
     public function test_unidade_exclui_no_chamados_e_decescolar_marca_cancelado_com_motivo_de_forma_idempotente(): void
