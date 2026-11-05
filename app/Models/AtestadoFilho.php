@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class AtestadoFilho extends Model
+{
+    public const AGUARDANDO = 'aguardando';
+    public const PRONTO = 'pronto';
+    public const BAIXADO = 'baixado';
+
+    protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'data_nascimento' => 'date',
+            'pronto_em' => 'datetime',
+            'baixado_em' => 'datetime',
+            'email_enviado_em' => 'datetime',
+        ];
+    }
+
+    public function pedido(): BelongsTo
+    {
+        return $this->belongsTo(AtestadoPedido::class, 'atestado_pedido_id');
+    }
+
+    public function statusRotulo(): string
+    {
+        return match ($this->status) {
+            self::PRONTO => 'Pronto para baixar',
+            self::BAIXADO => 'Baixado',
+            default => 'Aguardando a unidade de saúde',
+        };
+    }
+
+    public function disponivel(): bool
+    {
+        return in_array($this->status, [self::PRONTO, self::BAIXADO], true) && $this->arquivo;
+    }
+}

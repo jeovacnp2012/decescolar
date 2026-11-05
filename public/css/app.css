@@ -1,0 +1,83 @@
+/* Declaração Vacinal — identidade visual de Nova Mutum (manual 2021). Mobile first. */
+:root {
+  --verde-escuro: #004236;
+  --verde: #006440;
+  --verde-suave: #0b6a4c;
+  --limao: #b3d353;
+  --cinza: #6b6e6e;
+  --texto: #1f2a27;
+  --fundo: #f3f6f4;
+  --borda: #cfd9d4;
+  --erro: #b3261e;
+  --raio: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texto); background: var(--fundo); line-height: 1.5; font-size: 16px;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+.topo { background: var(--verde); border-bottom: 4px solid var(--limao); }
+.topo a { display: block; line-height: 0; }
+.topo img { display: block; height: 56px; width: auto; max-width: 100%; margin: 0 auto; }
+.faixa { height: 6px; background: linear-gradient(90deg, var(--verde-escuro) 0 40%, var(--verde) 40% 75%, var(--limao) 75%); }
+main { width: 100%; max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; flex: 1; }
+h1 { font-size: 1.35rem; line-height: 1.25; margin: 4px 0 6px; color: var(--verde-escuro); text-transform: uppercase; letter-spacing: .01em; }
+h2 { font-size: 1.05rem; margin: 0 0 12px; color: var(--verde-escuro); }
+.sub { color: var(--cinza); margin: 0 0 20px; font-size: .95rem; }
+.cartao { background: #fff; border: 1px solid var(--borda); border-radius: var(--raio); padding: 18px 16px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,66,54,.05); }
+label { display: block; font-weight: 600; font-size: .9rem; margin: 0 0 6px; }
+.campo { margin-bottom: 16px; }
+.campo:last-child { margin-bottom: 0; }
+input[type=text], input[type=email], input[type=tel], input[type=date], input[type=search], input:not([type]) {
+  width: 100%; min-height: 48px; padding: 10px 14px; font: inherit; font-size: 16px; /* 16px evita zoom no iOS */
+  border: 1.5px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto); appearance: none; -webkit-appearance: none;
+}
+input:focus, button:focus-visible, a:focus-visible { outline: 3px solid rgba(179,211,83,.9); outline-offset: 1px; border-color: var(--verde); }
+input.invalido, .invalido input { border-color: var(--erro); }
+.erro { color: var(--erro); font-size: .85rem; margin-top: 6px; font-weight: 500; }
+.alerta { border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: .92rem; }
+.alerta.erro-box { background: #fdecea; color: #7a1710; border: 1px solid #f3b9b4; }
+.alerta.info { background: #eef6dc; color: #314b00; border: 1px solid #d3e49b; }
+.dica { color: var(--cinza); font-size: .8rem; margin-top: 4px; }
+.grade { display: grid; gap: 16px; grid-template-columns: 1fr; margin-bottom: 16px; }
+.grade:last-child { margin-bottom: 0; }
+.grade > .campo { margin-bottom: 0; }
+@media (min-width: 560px) { .grade.dois { grid-template-columns: 1fr 1fr; } h1 { font-size: 1.6rem; } main { padding-top: 32px; } }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; padding: 12px 20px;
+  font: inherit; font-weight: 700; font-size: 1rem; border: 0; border-radius: 12px; cursor: pointer; text-decoration: none;
+  background: var(--verde); color: #fff; text-align: center;
+}
+.btn:hover { background: var(--verde-escuro); }
+.btn[disabled] { opacity: .6; cursor: wait; }
+.btn.limao { background: var(--limao); color: var(--verde-escuro); }
+.btn.limao:hover { background: #a3c445; }
+.btn.contorno { background: #fff; color: var(--verde); border: 2px solid var(--verde); }
+.btn.pequeno { min-height: 44px; width: auto; font-size: .9rem; padding: 8px 14px; }
+.btn.perigo { background: #fff; color: var(--erro); border: 1.5px solid var(--erro); }
+.check { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 2px solid var(--verde); border-radius: 12px; background: #f1f8f4; cursor: pointer; font-weight: 700; }
+.check input { width: 26px; height: 26px; margin: 0; flex: none; accent-color: var(--verde); }
+.check span { flex: 1; color: var(--verde-escuro); }
+.filho { border: 1.5px solid var(--borda); border-left: 6px solid var(--limao); border-radius: 12px; padding: 14px; margin-bottom: 14px; background: #fbfdfb; }
+.filho-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.filho-topo strong { color: var(--verde-escuro); }
+.oculto { display: none !important; }
+/* Select pesquisável */
+.combo { position: relative; }
+.combo-lista { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 260px; overflow-y: auto; background: #fff; border: 1.5px solid var(--verde); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); margin: 0; padding: 4px; list-style: none; }
+.combo-lista li { padding: 12px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
+.combo-lista li[aria-selected=true], .combo-lista li:hover { background: #e4f0e9; }
+.combo-lista li.vazio { color: var(--cinza); cursor: default; }
+.combo-seta { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--verde); font-size: .8rem; }
+/* Páginas de resultado */
+.selo { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: #e8ecea; color: var(--cinza); }
+.selo.pronto { background: var(--limao); color: var(--verde-escuro); }
+.selo.baixado { background: #d6ecdf; color: var(--verde-escuro); }
+.protocolo { font-size: 1.4rem; font-weight: 800; letter-spacing: .06em; color: var(--verde); }
+dl.dados { margin: 0; display: grid; grid-template-columns: 1fr; gap: 8px; }
+dl.dados dt { font-size: .75rem; color: var(--cinza); text-transform: uppercase; letter-spacing: .04em; }
+dl.dados dd { margin: 0 0 4px; font-weight: 600; }
+.rodape { text-align: center; color: var(--cinza); font-size: .8rem; padding: 16px; }
+.link { color: var(--verde); font-weight: 600; }
