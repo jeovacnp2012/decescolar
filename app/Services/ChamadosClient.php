@@ -67,7 +67,10 @@ class ChamadosClient
                 'phone' => $pedido->telefone,
                 'zip' => $pedido->cep,
                 'email' => $pedido->email,
-                'school' => $pedido->escola,
+                'relationship' => $pedido->vinculo,
+                'relationship_other' => $pedido->parentesco,
+                'birth_date' => $pedido->data_nascimento_responsavel,
+                'acs_name' => $pedido->acs_nome,
             ],
             'children' => $filhos->map(fn (AtestadoFilho $f) => [
                 'name' => $f->nome,

@@ -11,7 +11,20 @@ class AtestadoPedido extends Model
 
     protected function casts(): array
     {
-        return ['cpf' => 'encrypted', 'telefone' => 'encrypted'];
+        return ['cpf' => 'encrypted', 'telefone' => 'encrypted', 'data_nascimento_responsavel' => 'encrypted'];
+    }
+
+    public const VINCULOS = [
+        'pai' => 'Pai',
+        'mae' => 'Mãe',
+        'responsavel_legal' => 'Responsável legal',
+        'outro' => 'Outro',
+    ];
+
+    /** Idade mínima para pedir: pai/mãe a partir de 15 anos; responsável legal e outros a partir de 18. */
+    public static function idadeMinima(?string $vinculo): int
+    {
+        return in_array($vinculo, ['pai', 'mae'], true) ? 15 : 18;
     }
 
     public function filhos(): HasMany

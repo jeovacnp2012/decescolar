@@ -128,6 +128,32 @@
   chk.addEventListener('change', function () { alternar(); if (chk.checked) { var i = listaFilhos.querySelector('input'); if (i) i.focus(); } });
   alternar();
 
+  /* ---------- Vínculo do responsável: parentesco (só "Outro") e nome da mãe automático ---------- */
+  var radios = document.querySelectorAll('input[name="vinculo"]');
+  var campoPar = document.getElementById('campo-parentesco');
+  var inpPar = document.getElementById('parentesco');
+  var inpNome = document.getElementById('nome');
+  function vinculo() { var r = document.querySelector('input[name="vinculo"]:checked'); return r ? r.value : ''; }
+  function preencherMae() {
+    var ehMae = vinculo() === 'mae';
+    listaFilhos.querySelectorAll('input[name$="[nome_mae]"]').forEach(function (inp) {
+      if (ehMae && (inp.value === '' || inp.dataset.auto === '1')) { inp.value = inpNome.value; inp.dataset.auto = '1'; }
+      else if (!ehMae && inp.dataset.auto === '1') { inp.value = ''; delete inp.dataset.auto; }
+    });
+  }
+  function atualizarVinculo() {
+    var outro = vinculo() === 'outro';
+    campoPar.classList.toggle('oculto', !outro);
+    inpPar.required = outro;
+    preencherMae();
+  }
+  radios.forEach(function (r) { r.addEventListener('change', function () { atualizarVinculo(); if (vinculo() === 'outro') inpPar.focus(); }); });
+  inpNome.addEventListener('input', preencherMae);
+  // Se o responsável editar o nome da mãe à mão, para de preencher sozinho
+  listaFilhos.addEventListener('input', function (e) { if (e.target.name && /\[nome_mae\]$/.test(e.target.name)) delete e.target.dataset.auto; });
+  new MutationObserver(preencherMae).observe(listaFilhos, { childList: true });
+  atualizarVinculo();
+
   /* ---------- Envio: evita duplo clique ---------- */
   var form = document.getElementById('form-pedido');
   form.addEventListener('submit', function () {

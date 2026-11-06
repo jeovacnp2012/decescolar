@@ -5,7 +5,8 @@ use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\PedidoController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PedidoController::class, 'create'])->name('pedido.create');
+Route::view('/', 'inicio')->name('inicio');
+Route::get('/solicitar', [PedidoController::class, 'create'])->name('pedido.create');
 Route::post('/pedido', [PedidoController::class, 'store'])->middleware('throttle:10,1')->name('pedido.store');
 Route::get('/pedido/{uuid}', [PedidoController::class, 'show'])->name('pedido.show');
 

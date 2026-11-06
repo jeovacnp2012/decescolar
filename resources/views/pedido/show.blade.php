@@ -14,7 +14,7 @@
             <div class="protocolo">{{ $filho->protocolo }}</div>
             <dl class="dados" style="margin-top:12px">
                 <div><dt>Série</dt><dd>{{ $filho->serie }}</dd></div>
-                <div><dt>Escola</dt><dd>{{ $pedido->escola }}</dd></div>
+                <div><dt>Unidade de saúde</dt><dd>{{ $pedido->unidade_nome }}</dd></div>
             </dl>
             <p style="margin:14px 0 0"><a class="btn contorno" href="{{ route('atestado.show', $filho->token) }}">Acompanhar este pedido</a></p>
         </section>

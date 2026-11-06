@@ -81,3 +81,14 @@ dl.dados dt { font-size: .75rem; color: var(--cinza); text-transform: uppercase;
 dl.dados dd { margin: 0 0 4px; font-weight: 600; }
 .rodape { text-align: center; color: var(--cinza); font-size: .8rem; padding: 16px; }
 .link { color: var(--verde); font-weight: 600; }
+
+/* Vínculo do responsável (pai / mãe / responsável legal / outro) */
+fieldset.opcoes-grupo { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+fieldset.opcoes-grupo legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
+.opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opcao { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 12px; border: 1.5px solid #c9d6cf; border-radius: 12px; background: #fff; cursor: pointer; font-weight: 600; }
+.opcao input { width: 24px; height: 24px; margin: 0; flex: none; accent-color: var(--verde); }
+.opcao:has(input:checked) { border-color: var(--verde); background: #f1f8f4; }
+.opcao:has(input:focus-visible) { outline: 3px solid var(--limao); outline-offset: 2px; }
+.opcoes-grupo.invalido .opcao { border-color: var(--erro); }
+.opcional { font-weight: 400; color: var(--cinza); font-size: .85rem; }

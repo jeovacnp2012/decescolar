@@ -41,7 +41,8 @@ class FluxoAtestadoTest extends TestCase
     {
         return array_merge([
             'nome' => 'Maria da Silva', 'cpf' => '529.982.247-25', 'telefone' => '(65) 99999-1234',
-            'email' => 'maria@exemplo.com', 'cep' => '78450-000', 'escola' => 'Escola Municipal X',
+            'vinculo' => 'mae', 'data_nascimento_responsavel' => now()->subYears(30)->format('Y-m-d'),
+            'email' => 'maria@exemplo.com', 'cep' => '78450-000', 'acs_nome' => 'Joana Souza',
             'unidade_id' => 8, 'pedir_atestado' => '1',
             'filhos' => [
                 ['nome' => 'João', 'serie' => '3º ano', 'data_nascimento' => '2017-05-10', 'nome_mae' => 'Maria da Silva'],
@@ -53,7 +54,73 @@ class FluxoAtestadoTest extends TestCase
     public function test_formulario_lista_unidades_vindas_da_api(): void
     {
         $this->fakeChamados();
-        $this->get('/')->assertOk()->assertSee('PSF PARQUE DO SOL')->assertSee('Peço atestado vacinal');
+        $this->get('/solicitar')->assertOk()->assertSee('PSF PARQUE DO SOL')->assertSee('Peço atestado vacinal')
+            ->assertSee('Responsável legal')->assertSee('Sua data de nascimento')->assertSee('Nome do ACS')
+            ->assertDontSee('Nome da escola');
+    }
+
+    public function test_tela_inicial_tem_os_dois_botoes_na_ordem_pedida(): void
+    {
+        $r = $this->get('/')->assertOk()->assertSee('Já fiz um pedido — consultar / baixar')->assertSee('Solicitar atestado');
+        $html = $r->getContent();
+        $this->assertLessThan(strpos($html, 'Solicitar atestado</a>'), strpos($html, 'Já fiz um pedido'));
+        $r->assertSee(route('consulta.form'), false)->assertSee(route('pedido.create'), false);
+    }
+
+    public function test_regra_de_idade_do_responsavel_e_parentesco_do_outro(): void
+    {
+        $n = 0;
+        Http::fake([
+            '*/vaccination/units' => Http::response(['data' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL']]]),
+            '*/vaccination/requests' => function () use (&$n) {
+                return Http::response(['data' => [['protocol' => 'ATV'.str_pad(++$n, 6, '0', STR_PAD_LEFT)], ['protocol' => 'ATV'.str_pad(++$n, 6, '0', STR_PAD_LEFT)]]], 201);
+            },
+        ]);
+        $nasc = fn (int $anos, int $dias = 0) => now()->subYears($anos)->addDays($dias)->format('Y-m-d');
+
+        // pai/mãe: 15 anos completos pode; 14 anos não
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'pai', 'data_nascimento_responsavel' => $nasc(14, 30)]))
+            ->assertSessionHasErrors('data_nascimento_responsavel');
+        $this->assertSame(0, AtestadoPedido::count());
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'pai', 'data_nascimento_responsavel' => $nasc(15)]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(1, AtestadoPedido::count());
+
+        // responsável legal e outro: só a partir de 18
+        foreach (['responsavel_legal', 'outro'] as $v) {
+            $this->post('/pedido', $this->dadosValidos(['vinculo' => $v, 'parentesco' => 'tia', 'data_nascimento_responsavel' => $nasc(17, 200)]))
+                ->assertSessionHasErrors('data_nascimento_responsavel');
+        }
+        $this->assertSame(1, AtestadoPedido::count());
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'responsavel_legal', 'data_nascimento_responsavel' => $nasc(18)]))
+            ->assertSessionHasNoErrors();
+
+        // "outro" exige o parentesco; vínculo é obrigatório e precisa ser um dos 4
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'outro', 'parentesco' => '', 'data_nascimento_responsavel' => $nasc(30)]))
+            ->assertSessionHasErrors('parentesco');
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => null]))->assertSessionHasErrors('vinculo');
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'tio']))->assertSessionHasErrors('vinculo');
+        // data de nascimento é obrigatória; ACS e escola não
+        $this->post('/pedido', $this->dadosValidos(['data_nascimento_responsavel' => '']))->assertSessionHasErrors('data_nascimento_responsavel');
+        $this->post('/pedido', $this->dadosValidos(['acs_nome' => '']))->assertSessionHasNoErrors();
+    }
+
+    public function test_dados_novos_sao_gravados_com_data_criptografada_e_enviados_ao_chamados(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos(['vinculo' => 'outro', 'parentesco' => 'avó', 'data_nascimento_responsavel' => '1960-02-03']));
+
+        $p = AtestadoPedido::firstOrFail();
+        $this->assertSame('outro', $p->vinculo);
+        $this->assertSame('avó', $p->parentesco);
+        $this->assertSame('1960-02-03', $p->data_nascimento_responsavel);
+        $this->assertSame('Joana Souza', $p->acs_nome);
+        $this->assertStringNotContainsString('1960', (string) \DB::table('atestado_pedidos')->value('data_nascimento_responsavel'));
+
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/vaccination/requests')
+            && $r['guardian']['relationship'] === 'outro' && $r['guardian']['relationship_other'] === 'avó'
+            && $r['guardian']['birth_date'] === '1960-02-03' && $r['guardian']['acs_name'] === 'Joana Souza'
+            && ! array_key_exists('school', $r['guardian']));
     }
 
     public function test_pedido_com_varios_filhos_e_enviado_ao_chamados_e_guarda_protocolos(): void

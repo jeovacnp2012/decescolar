@@ -30,6 +30,29 @@
                 <input type="text" id="nome" name="nome" value="{{ old('nome') }}" autocomplete="name" autocapitalize="words" required>
                 @error('nome')<div class="erro">{{ $message }}</div>@enderror
             </div>
+            <fieldset class="campo opcoes-grupo {{ $campoErro('vinculo') }}">
+                <legend>Você é</legend>
+                <div class="opcoes">
+                    @foreach (\App\Models\AtestadoPedido::VINCULOS as $valor => $rotulo)
+                        <label class="opcao">
+                            <input type="radio" name="vinculo" value="{{ $valor }}" @checked(old('vinculo') === $valor) required>
+                            <span>{{ $rotulo }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('vinculo')<div class="erro">{{ $message }}</div>@enderror
+            </fieldset>
+            <div class="campo {{ $campoErro('parentesco') }} {{ old('vinculo') === 'outro' ? '' : 'oculto' }}" id="campo-parentesco">
+                <label for="parentesco">Qual o seu parentesco com a criança?</label>
+                <input type="text" id="parentesco" name="parentesco" value="{{ old('parentesco') }}" maxlength="60" placeholder="Ex.: tia, avó, tutor" autocapitalize="sentences" autocomplete="off">
+                @error('parentesco')<div class="erro">{{ $message }}</div>@enderror
+            </div>
+            <div class="campo {{ $campoErro('data_nascimento_responsavel') }}">
+                <label for="data_nascimento_responsavel">Sua data de nascimento</label>
+                <input type="date" id="data_nascimento_responsavel" name="data_nascimento_responsavel" value="{{ old('data_nascimento_responsavel') }}" max="{{ now()->format('Y-m-d') }}" autocomplete="bday" required>
+                <div class="dica">Pai ou mãe: a partir de 15 anos. Responsável legal ou outro parentesco: a partir de 18 anos.</div>
+                @error('data_nascimento_responsavel')<div class="erro">{{ $message }}</div>@enderror
+            </div>
             <div class="grade dois">
                 <div class="campo {{ $campoErro('cpf') }}">
                     <label for="cpf">CPF</label>
@@ -56,12 +79,7 @@
         </section>
 
         <section class="cartao">
-            <h2>Escola e unidade de saúde</h2>
-            <div class="campo {{ $campoErro('escola') }}">
-                <label for="escola">Nome da escola onde o filho estuda</label>
-                <input type="text" id="escola" name="escola" value="{{ old('escola') }}" autocapitalize="words" required>
-                @error('escola')<div class="erro">{{ $message }}</div>@enderror
-            </div>
+            <h2>Unidade de saúde</h2>
             <div class="campo {{ $campoErro('unidade_id') }}">
                 <label for="unidade-busca" id="unidade-rotulo">Unidade de saúde da sua família</label>
                 <div class="combo" id="combo-unidade" data-unidades='@json($unidades)'>
@@ -73,6 +91,11 @@
                 </div>
                 <div class="dica">Escolha o posto/unidade onde sua família é atendida.</div>
                 @error('unidade_id')<div class="erro">{{ $message }}</div>@enderror
+            </div>
+            <div class="campo {{ $campoErro('acs_nome') }}">
+                <label for="acs_nome">Nome do ACS (Agente Comunitário de Saúde) <span class="opcional">— opcional</span></label>
+                <input type="text" id="acs_nome" name="acs_nome" value="{{ old('acs_nome') }}" maxlength="255" autocapitalize="words" autocomplete="off">
+                @error('acs_nome')<div class="erro">{{ $message }}</div>@enderror
             </div>
         </section>
 
@@ -95,7 +118,7 @@
         </section>
 
         <button type="submit" class="btn" id="enviar">Enviar pedido</button>
-        <p style="text-align:center;margin-top:16px"><a class="link" href="{{ route('consulta.form') }}">Já fiz um pedido — consultar / baixar</a></p>
+        <p style="text-align:center;margin-top:16px"><a class="link" href="{{ route('inicio') }}">← Voltar ao início</a></p>
     </form>
 
     <template id="modelo-filho">
