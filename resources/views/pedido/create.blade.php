@@ -27,7 +27,7 @@
         <section class="cartao">
             <h2>Seus dados</h2>
             <div class="campo {{ $campoErro('nome') }}">
-                <label for="nome">Nome completo do responsável <span class="obrig" aria-hidden="true">*</span></label>
+                <label for="nome">Nome completo <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="text" id="nome" name="nome" value="{{ old('nome') }}" autocomplete="name" autocapitalize="words" required>
                 @error('nome')<div class="erro">{{ $message }}</div>@enderror
             </div>
