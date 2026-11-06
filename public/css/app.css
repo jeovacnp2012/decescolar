@@ -65,9 +65,9 @@ input.invalido, .invalido input { border-color: var(--erro); }
 .filho-topo strong { color: var(--verde-escuro); }
 .oculto { display: none !important; }
 /* Select pesquisável */
-.combo { position: relative; }
-.combo-lista { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 260px; overflow-y: auto; background: #fff; border: 1.5px solid var(--verde); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); margin: 0; padding: 4px; list-style: none; }
-.combo-lista li { padding: 12px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
+.combo { position: relative; scroll-margin-top: 12px; }
+.combo-lista { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: min(260px, 40vh); overscroll-behavior: contain; overflow-y: auto; background: #fff; border: 1.5px solid var(--verde); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); margin: 0; padding: 4px; list-style: none; }
+.combo-lista li { padding: 12px; min-height: 44px; box-sizing: border-box; border-radius: 8px; cursor: pointer; font-size: .95rem; }
 .combo-lista li[aria-selected=true], .combo-lista li:hover { background: #e4f0e9; }
 .combo-lista li.vazio { color: var(--cinza); cursor: default; }
 .combo-seta { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--verde); font-size: .8rem; }

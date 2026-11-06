@@ -6,7 +6,7 @@
     </div>
     <div class="campo {{ $erroF('nome') }}">
         <label>Nome do filho(a)</label>
-        <input type="text" name="filhos[{{ $i }}][nome]" value="{{ $f['nome'] ?? '' }}" autocomplete="off" data-req>
+        <input type="text" name="filhos[{{ $i }}][nome]" value="{{ $f['nome'] ?? '' }}" autocomplete="off" autocapitalize="words" data-req>
         @error("filhos.$i.nome")<div class="erro">{{ $message }}</div>@enderror
     </div>
     <div class="grade dois">
@@ -23,7 +23,7 @@
     </div>
     <div class="campo {{ $erroF('nome_mae') }}">
         <label>Nome da mãe</label>
-        <input type="text" name="filhos[{{ $i }}][nome_mae]" value="{{ $f['nome_mae'] ?? '' }}" autocomplete="off" data-req>
+        <input type="text" name="filhos[{{ $i }}][nome_mae]" value="{{ $f['nome_mae'] ?? '' }}" autocomplete="off" autocapitalize="words" data-req>
         @error("filhos.$i.nome_mae")<div class="erro">{{ $message }}</div>@enderror
     </div>
 </div>

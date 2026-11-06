@@ -48,8 +48,9 @@
       var li = document.createElement('li');
       li.setAttribute('role', 'option'); li.id = 'unidade-op-' + u.id; li.textContent = u.name;
       li.setAttribute('aria-selected', String(i === ativo));
-      li.addEventListener('mousedown', function (e) { e.preventDefault(); escolher(u); });
-      li.addEventListener('touchend', function (e) { e.preventDefault(); escolher(u); });
+      // mousedown só impede o campo de perder o foco; a escolha é no click (não dispara ao rolar a lista com o dedo)
+      li.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      li.addEventListener('click', function () { escolher(u); });
       lista.appendChild(li);
     });
   }
@@ -60,7 +61,11 @@
   var atual = unidades.filter(function (u) { return String(u.id) === String(hidden.value); })[0];
   if (atual) busca.value = atual.name;
 
-  busca.addEventListener('focus', function () { render(atual && busca.value === atual.name ? '' : busca.value); abrir(); });
+  busca.addEventListener('focus', function () {
+    render(atual && busca.value === atual.name ? '' : busca.value); abrir();
+    // No celular o teclado cobre a metade de baixo: sobe o campo para o topo, deixando a lista visível.
+    setTimeout(function () { combo.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 300);
+  });
   busca.addEventListener('input', function () { hidden.value = ''; atual = null; ativo = -1; render(busca.value); abrir(); });
   busca.addEventListener('blur', function () { setTimeout(function () {
     fechar();

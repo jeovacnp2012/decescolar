@@ -27,7 +27,7 @@
             <h2>Seus dados</h2>
             <div class="campo {{ $campoErro('nome') }}">
                 <label for="nome">Nome completo do responsável</label>
-                <input type="text" id="nome" name="nome" value="{{ old('nome') }}" autocomplete="name" required>
+                <input type="text" id="nome" name="nome" value="{{ old('nome') }}" autocomplete="name" autocapitalize="words" required>
                 @error('nome')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <div class="grade dois">
@@ -59,7 +59,7 @@
             <h2>Escola e unidade de saúde</h2>
             <div class="campo {{ $campoErro('escola') }}">
                 <label for="escola">Nome da escola onde o filho estuda</label>
-                <input type="text" id="escola" name="escola" value="{{ old('escola') }}" required>
+                <input type="text" id="escola" name="escola" value="{{ old('escola') }}" autocapitalize="words" required>
                 @error('escola')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <div class="campo {{ $campoErro('unidade_id') }}">
