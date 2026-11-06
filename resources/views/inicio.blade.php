@@ -12,4 +12,6 @@
         <a class="btn" href="{{ route('pedido.create') }}">Solicitar atestado</a>
         <p class="dica" style="margin:8px 0 0">Preencha os seus dados e os dos filhos. A unidade de saúde emite a declaração e você baixa o PDF aqui.</p>
     </section>
+
+    <a class="adm-discreto" href="{{ route('admin.login') }}" rel="nofollow">Acesso Adm</a>
 @endsection

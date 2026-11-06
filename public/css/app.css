@@ -92,3 +92,55 @@ fieldset.opcoes-grupo legend { padding: 0; margin-bottom: 6px; font-weight: 600;
 .opcao:has(input:focus-visible) { outline: 3px solid var(--limao); outline-offset: 2px; }
 .opcoes-grupo.invalido .opcao { border-color: var(--erro); }
 .opcional { font-weight: 400; color: var(--cinza); font-size: .85rem; }
+
+/* ---------- Área administrativa ---------- */
+main.largo { max-width: 1100px; }
+.admin-nav { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--verde-escuro); color: #fff; font-size: .9rem; }
+.admin-nav a { color: #fff; text-decoration: none; font-weight: 600; padding: 8px 4px; border-bottom: 3px solid transparent; }
+.admin-nav a.ativo { border-bottom-color: var(--limao); }
+.admin-nav .espaco { flex: 1; }
+.admin-usuario { opacity: .8; font-size: .8rem; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-sair { background: transparent; border: 1.5px solid rgba(255,255,255,.6); color: #fff; border-radius: 8px; min-height: 40px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+.totais { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.total { display: flex; flex-direction: column; background: #fff; border: 1.5px solid var(--borda); border-radius: var(--raio); padding: 10px 12px; text-decoration: none; color: var(--texto); }
+.total strong { font-size: 1.5rem; line-height: 1.1; color: var(--verde-escuro); }
+.total span { font-size: .78rem; color: var(--cinza); }
+.total.ativo { border-color: var(--verde); background: #f1f8f4; }
+.filtros { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.filtros .campo { margin: 0; }
+.filtros-acoes { display: flex; gap: 10px; align-items: center; }
+.filtros-acoes .btn { width: auto; flex: 1; }
+.imprimir { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.imprimir-botoes { display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
+.imprimir-botoes .btn { flex: 1; min-width: 150px; }
+table.tabela { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--borda); border-radius: var(--raio); overflow: hidden; }
+table.tabela th { background: var(--verde); color: #fff; text-align: left; font-size: .78rem; padding: 10px 12px; text-transform: uppercase; letter-spacing: .03em; }
+table.tabela td { padding: 10px 12px; border-bottom: 1px solid #e6ece9; vertical-align: top; font-size: .9rem; }
+table.tabela td small { display: block; color: var(--cinza); font-size: .75rem; margin-top: 2px; }
+.paginacao { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0; }
+.paginacao .btn { width: auto; }
+.adm-discreto { display: table; margin: 22px 0 0 auto; font-size: .72rem; color: #8b9691; text-decoration: none; padding: 7px 14px; border: 1px solid #d6ddd9; border-radius: 999px; background: transparent; }
+.adm-discreto:hover { color: var(--verde); text-decoration: underline; }
+@media (min-width: 720px) {
+  .totais { grid-template-columns: repeat(5, 1fr); }
+  .filtros { grid-template-columns: repeat(3, 1fr); }
+  .filtros-acoes { grid-column: 1 / -1; }
+  .filtros-acoes .btn { flex: none; min-width: 140px; }
+  .imprimir-botoes { width: auto; }
+}
+@media (max-width: 719px) {
+  table.tabela, table.tabela tbody, table.tabela tr, table.tabela td { display: block; width: 100%; }
+  table.tabela { border: 0; background: transparent; }
+  table.tabela thead { display: none; }
+  table.tabela tr { background: #fff; border: 1px solid var(--borda); border-radius: var(--raio); margin-bottom: 12px; padding: 6px 0; }
+  table.tabela td { border: 0; padding: 6px 14px; display: flex; gap: 12px; justify-content: space-between; text-align: right; }
+  table.tabela td::before { content: attr(data-label); color: var(--cinza); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; text-align: left; flex: none; padding-top: 3px; }
+  table.tabela td small { text-align: right; }
+}
+
+/* selects (filtros da área administrativa) */
+select {
+  width: 100%; min-height: 48px; padding: 10px 14px; font: inherit; font-size: 16px;
+  border: 1.5px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto);
+}
+select:focus-visible { outline: 3px solid rgba(179,211,83,.9); outline-offset: 1px; border-color: var(--verde); }

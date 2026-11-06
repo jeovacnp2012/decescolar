@@ -14,7 +14,7 @@
 </head>
 <body>
     <header class="topo">
-        <a href="{{ route('pedido.create') }}" aria-label="Início — Declaração vacinal">
+        <a href="{{ route('inicio') }}" aria-label="Início — Declaração vacinal">
             <img src="{{ asset('img/logo-horizontal.png') }}" alt="Prefeitura de Nova Mutum" width="170" height="56">
         </a>
     </header>
