@@ -144,3 +144,7 @@ select {
   border: 1.5px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto);
 }
 select:focus-visible { outline: 3px solid rgba(179,211,83,.9); outline-offset: 1px; border-color: var(--verde); }
+
+/* marcação de campos obrigatórios */
+.obrig { color: var(--erro, #c62828); font-weight: 800; margin-left: 2px; }
+.legenda-obrig { margin: 0 0 14px; font-size: 14px; color: #555; }

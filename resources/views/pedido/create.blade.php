@@ -10,6 +10,7 @@
 @section('conteudo')
     <h1>Declaração vacinal para matrícula escolar</h1>
     <p class="sub">Preencha os dados abaixo. Quando a unidade de saúde emitir a declaração, avisaremos você por e-mail para baixar o PDF.</p>
+    <p class="legenda-obrig"><span class="obrig" aria-hidden="true">*</span> Campo obrigatório</p>
 
     @if ($erroUnidades)
         <div class="alerta erro-box" role="alert">{{ $erroUnidades }}</div>
@@ -26,12 +27,12 @@
         <section class="cartao">
             <h2>Seus dados</h2>
             <div class="campo {{ $campoErro('nome') }}">
-                <label for="nome">Nome completo do responsável</label>
+                <label for="nome">Nome completo do responsável <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="text" id="nome" name="nome" value="{{ old('nome') }}" autocomplete="name" autocapitalize="words" required>
                 @error('nome')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <fieldset class="campo opcoes-grupo {{ $campoErro('vinculo') }}">
-                <legend>Você é</legend>
+                <legend>Você é <span class="obrig" aria-hidden="true">*</span></legend>
                 <div class="opcoes">
                     @foreach (\App\Models\AtestadoPedido::VINCULOS as $valor => $rotulo)
                         <label class="opcao">
@@ -43,36 +44,36 @@
                 @error('vinculo')<div class="erro">{{ $message }}</div>@enderror
             </fieldset>
             <div class="campo {{ $campoErro('parentesco') }} {{ old('vinculo') === 'outro' ? '' : 'oculto' }}" id="campo-parentesco">
-                <label for="parentesco">Qual o seu parentesco com a criança?</label>
+                <label for="parentesco">Qual o seu parentesco com a criança? <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="text" id="parentesco" name="parentesco" value="{{ old('parentesco') }}" maxlength="60" placeholder="Ex.: tia, avó, tutor" autocapitalize="sentences" autocomplete="off">
                 @error('parentesco')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <div class="campo {{ $campoErro('data_nascimento_responsavel') }}">
-                <label for="data_nascimento_responsavel">Sua data de nascimento</label>
+                <label for="data_nascimento_responsavel">Sua data de nascimento <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="date" id="data_nascimento_responsavel" name="data_nascimento_responsavel" value="{{ old('data_nascimento_responsavel') }}" max="{{ now()->format('Y-m-d') }}" autocomplete="bday" required>
                 <div class="dica">Pai ou mãe: a partir de 15 anos. Responsável legal ou outro parentesco: a partir de 18 anos.</div>
                 @error('data_nascimento_responsavel')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <div class="grade dois">
                 <div class="campo {{ $campoErro('cpf') }}">
-                    <label for="cpf">CPF</label>
+                    <label for="cpf">CPF <span class="obrig" aria-hidden="true">*</span></label>
                     <input type="text" id="cpf" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off" data-mascara="cpf" required>
                     @error('cpf')<div class="erro">{{ $message }}</div>@enderror
                 </div>
                 <div class="campo {{ $campoErro('telefone') }}">
-                    <label for="telefone">Telefone (WhatsApp)</label>
+                    <label for="telefone">Telefone (WhatsApp) <span class="obrig" aria-hidden="true">*</span></label>
                     <input type="tel" id="telefone" name="telefone" value="{{ old('telefone') }}" inputmode="tel" placeholder="(65) 99999-9999" maxlength="15" autocomplete="tel-national" data-mascara="telefone" required>
                     @error('telefone')<div class="erro">{{ $message }}</div>@enderror
                 </div>
             </div>
             <div class="campo {{ $campoErro('email') }}">
-                <label for="email">E-mail</label>
+                <label for="email">E-mail <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="email" id="email" name="email" value="{{ old('email') }}" inputmode="email" autocomplete="email" placeholder="voce@exemplo.com" required>
                 <div class="dica">Enviaremos o aviso e a declaração vacinal para este e-mail.</div>
                 @error('email')<div class="erro">{{ $message }}</div>@enderror
             </div>
             <div class="campo {{ $campoErro('cep') }}">
-                <label for="cep">CEP</label>
+                <label for="cep">CEP <span class="obrig" aria-hidden="true">*</span></label>
                 <input type="text" id="cep" name="cep" value="{{ old('cep') }}" inputmode="numeric" placeholder="00000-000" maxlength="9" autocomplete="postal-code" data-mascara="cep" required>
                 @error('cep')<div class="erro">{{ $message }}</div>@enderror
             </div>
@@ -81,7 +82,7 @@
         <section class="cartao">
             <h2>Unidade de saúde</h2>
             <div class="campo {{ $campoErro('unidade_id') }}">
-                <label for="unidade-busca" id="unidade-rotulo">Unidade de saúde da sua família</label>
+                <label for="unidade-busca" id="unidade-rotulo">Unidade de saúde da sua família <span class="obrig" aria-hidden="true">*</span></label>
                 <div class="combo" id="combo-unidade" data-unidades='@json($unidades)'>
                     <input type="search" id="unidade-busca" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="unidade-lista"
                            placeholder="Digite para pesquisar…" autocomplete="off" enterkeyhint="search" @disabled(empty($unidades))>
