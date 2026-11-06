@@ -21,15 +21,16 @@ class AdminTest extends TestCase
         return User::create(['name' => 'Administrador', 'email' => 'admin@teste.local', 'password' => self::SENHA]);
     }
 
-    private function pedido(string $cpf, string $unidade, int $unidadeId, string $filho, string $status = 'aguardando', string $protocolo = 'ATV000001', string $vinculo = 'mae'): AtestadoFilho
+    private function pedido(string $cpf, string $unidade, int $unidadeId, string $filho, string $status = 'aguardando', string $protocolo = 'ATV000001', string $tipo = 'filhos'): AtestadoFilho
     {
         $p = AtestadoPedido::create([
-            'uuid' => (string) Str::uuid(), 'responsavel_nome' => 'Maria Responsável', 'vinculo' => $vinculo, 'cpf' => $cpf,
+            'uuid' => (string) Str::uuid(), 'responsavel_nome' => 'Maria Responsável', 'tipo' => $tipo, 'vinculo' => 'mae', 'cpf' => $cpf,
+            'logradouro' => 'Rua das Acácias', 'numero' => '123', 'bairro' => 'Centro', 'cidade' => 'Nova Mutum', 'uf' => 'MT',
             'cpf_hash' => AtestadoPedido::hashCpf($cpf), 'telefone' => '(65) 99999-1234', 'cep' => '78450-000', 'email' => 'maria@exemplo.com',
             'data_nascimento_responsavel' => '1990-05-10', 'unidade_id' => $unidadeId, 'unidade_nome' => $unidade, 'acs_nome' => 'Joana ACS',
         ]);
 
-        return $p->filhos()->create(['nome' => $filho, 'serie' => '3º ano', 'data_nascimento' => '2017-03-01', 'nome_mae' => 'Maria Responsável',
+        return $p->filhos()->create(['nome' => $filho, 'serie' => '3º ano', 'data_nascimento' => '2017-03-01', 'nome_mae' => 'Maria Responsável', 'unidade_id' => $unidadeId, 'unidade_nome' => $unidade,
             'protocolo' => $protocolo, 'status' => $status, 'token' => Str::random(48)]);
     }
 
@@ -85,8 +86,8 @@ class AdminTest extends TestCase
     public function test_lista_mostra_pedidos_com_cpf_mascarado_e_filtra(): void
     {
         $this->pedido('52998224725', 'PSF PARQUE DO SOL', 8, 'João da Silva', 'aguardando', 'ATV000001');
-        $this->pedido('11144477735', 'ESF ALTO DA COLINA', 4, 'Ana Souza', 'baixado', 'ATV000002', 'pai');
-        $this->pedido('39053344705', 'ESF ALTO DA COLINA', 4, 'Pedro Lima', 'cancelado', 'ATV000003', 'outro');
+        $this->pedido('11144477735', 'ESF ALTO DA COLINA', 4, 'Ana Souza', 'baixado', 'ATV000002', 'proprio');
+        $this->pedido('39053344705', 'ESF ALTO DA COLINA', 4, 'Pedro Lima', 'cancelado', 'ATV000003', 'responsavel_legal');
         $admin = $this->admin();
 
         $r = $this->actingAs($admin)->get('/admin/pedidos')->assertOk()
@@ -96,7 +97,7 @@ class AdminTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/pedidos?unidade=4')->assertSee('Ana Souza')->assertSee('Pedro Lima')->assertDontSee('João da Silva');
         $this->actingAs($admin)->get('/admin/pedidos?status=cancelado')->assertSee('ATV000003')->assertDontSee('ATV000001');
-        $this->actingAs($admin)->get('/admin/pedidos?vinculo=pai')->assertSee('ATV000002')->assertDontSee('ATV000001');
+        $this->actingAs($admin)->get('/admin/pedidos?tipo=proprio')->assertSee('ATV000002')->assertDontSee('ATV000001');
         $this->actingAs($admin)->get('/admin/pedidos?q=atv000001')->assertSee('ATV000001')->assertDontSee('ATV000002');
         $this->actingAs($admin)->get('/admin/pedidos?q=ana+souza')->assertSee('ATV000002')->assertDontSee('ATV000001');
         // busca por CPF completo (via hash, sem expor o CPF no banco)
@@ -112,7 +113,7 @@ class AdminTest extends TestCase
         $admin = $this->admin();
         $this->actingAs($admin)->get('/admin/pedidos/'.$f->id)->assertOk()
             ->assertSee('529.982.247-25')->assertSee('(65) 99999-1234')->assertSee('maria@exemplo.com')
-            ->assertSee('Joana ACS')->assertSee('10/05/1990')->assertSee('Mãe');
+            ->assertSee('Joana ACS')->assertSee('10/05/1990')->assertSee('Mãe')->assertSee('Rua das Acácias, 123')->assertSee('Nova Mutum/MT');
         $this->actingAs($admin)->get('/admin/pedidos/99999')->assertNotFound();
     }
 

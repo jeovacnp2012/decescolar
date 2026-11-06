@@ -23,6 +23,7 @@ class AtestadoFilho extends Model
             'cancelado_em' => 'datetime',
             'cancelamento_avisado_em' => 'datetime',
             'email_enviado_em' => 'datetime',
+            'cpf' => 'encrypted',
         ];
     }
 

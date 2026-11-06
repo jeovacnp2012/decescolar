@@ -38,8 +38,8 @@ class RelatorioController extends Controller
     {
         $filtro = FiltroPedidos::daRequisicao($request);
         $linhas = $filtro->base()
-            ->selectRaw('atestado_pedidos.unidade_nome as unidade, atestado_filhos.status as situacao, COUNT(*) as total')
-            ->groupBy('atestado_pedidos.unidade_nome', 'atestado_filhos.status')->get();
+            ->selectRaw('atestado_filhos.unidade_nome as unidade, atestado_filhos.status as situacao, COUNT(*) as total')
+            ->groupBy('atestado_filhos.unidade_nome', 'atestado_filhos.status')->get();
 
         $porUnidade = [];
         foreach ($linhas as $l) {

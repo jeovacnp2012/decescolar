@@ -17,7 +17,7 @@ class FiltroPedidos
         AtestadoFilho::CANCELADO => 'Cancelado',
     ];
 
-    /** @var array{q:string,unidade:string,status:string,vinculo:string,de:string,ate:string} */
+    /** @var array{q:string,unidade:string,status:string,tipo:string,de:string,ate:string} */
     public array $valores;
 
     public function __construct(array $entrada)
@@ -29,7 +29,7 @@ class FiltroPedidos
             'q' => mb_substr($texto('q'), 0, 100),
             'unidade' => ctype_digit($texto('unidade')) ? $texto('unidade') : '',
             'status' => array_key_exists($texto('status'), self::STATUS) ? $texto('status') : '',
-            'vinculo' => array_key_exists($texto('vinculo'), AtestadoPedido::VINCULOS) ? $texto('vinculo') : '',
+            'tipo' => array_key_exists($texto('tipo'), AtestadoPedido::TIPOS) ? $texto('tipo') : '',
             'de' => $data('de'),
             'ate' => $data('ate'),
         ];
@@ -61,19 +61,23 @@ class FiltroPedidos
                     ->orWhereRaw('LOWER(atestado_filhos.nome) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(atestado_pedidos.responsavel_nome) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(atestado_pedidos.email) LIKE ?', [$like]);
+                $alnum = strtoupper(preg_replace('/[^0-9A-Za-z]/', '', $busca));
+                if (strlen($alnum) === 14) {
+                    $w->orWhere('atestado_pedidos.cnpj', $alnum);
+                }
                 if (strlen($digitos) === 11) {
                     $w->orWhere('atestado_pedidos.cpf_hash', AtestadoPedido::hashCpf($digitos));
                 }
             });
         }
         if ($v['unidade'] !== '') {
-            $q->where('atestado_pedidos.unidade_id', (int) $v['unidade']);
+            $q->where('atestado_filhos.unidade_id', (int) $v['unidade']);
         }
         if ($v['status'] !== '') {
             $q->where('atestado_filhos.status', $v['status']);
         }
-        if ($v['vinculo'] !== '') {
-            $q->where('atestado_pedidos.vinculo', $v['vinculo']);
+        if ($v['tipo'] !== '') {
+            $q->where('atestado_pedidos.tipo', $v['tipo']);
         }
         if ($v['de'] !== '') {
             $q->whereDate('atestado_filhos.created_at', '>=', $v['de']);
@@ -94,14 +98,14 @@ class FiltroPedidos
             $partes[] = 'busca: "'.$v['q'].'"';
         }
         if ($v['unidade'] !== '') {
-            $nome = AtestadoPedido::where('unidade_id', (int) $v['unidade'])->value('unidade_nome');
+            $nome = AtestadoFilho::where('unidade_id', (int) $v['unidade'])->value('unidade_nome');
             $partes[] = 'unidade: '.($nome ?? $v['unidade']);
         }
         if ($v['status'] !== '') {
             $partes[] = 'situação: '.self::STATUS[$v['status']];
         }
-        if ($v['vinculo'] !== '') {
-            $partes[] = 'vínculo: '.AtestadoPedido::VINCULOS[$v['vinculo']];
+        if ($v['tipo'] !== '') {
+            $partes[] = 'tipo: '.AtestadoPedido::TIPOS[$v['tipo']];
         }
         if ($v['de'] !== '') {
             $partes[] = 'a partir de '.date('d/m/Y', strtotime($v['de']));
@@ -116,7 +120,7 @@ class FiltroPedidos
     /** Unidades que já apareceram em pedidos: [id => nome]. */
     public static function unidades(): array
     {
-        return AtestadoPedido::query()->select('unidade_id', 'unidade_nome')->distinct()->orderBy('unidade_nome')
+        return AtestadoFilho::query()->whereNotNull('unidade_id')->select('unidade_id', 'unidade_nome')->distinct()->orderBy('unidade_nome')
             ->pluck('unidade_nome', 'unidade_id')->all();
     }
 }

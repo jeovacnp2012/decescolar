@@ -9,7 +9,7 @@
     <tr><td style="padding:24px 20px">
       <h1 style="margin:0 0 12px;font-size:20px;color:#004236">Sua declaração vacinal está pronta</h1>
       <p style="margin:0 0 12px">Olá, {{ $filho->pedido->responsavel_nome }}.</p>
-      <p style="margin:0 0 12px">A unidade de saúde <strong>{{ $filho->pedido->unidade_nome }}</strong> emitiu a declaração vacinal de <strong>{{ $filho->nome }}</strong> (protocolo <strong>{{ $filho->protocolo }}</strong>).</p>
+      <p style="margin:0 0 12px">A unidade de saúde <strong>{{ $filho->unidade_nome ?? $filho->pedido->unidade_nome }}</strong> emitiu a declaração vacinal de <strong>{{ $filho->nome }}</strong> (protocolo <strong>{{ $filho->protocolo }}</strong>).</p>
       @if ($anexado)
         <p style="margin:0 0 12px">O arquivo PDF está anexado a este e-mail. Você também pode baixá-lo pelo botão abaixo.</p>
       @else

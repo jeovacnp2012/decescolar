@@ -4,12 +4,18 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\RelatorioController;
 use App\Http\Controllers\AtestadoController;
+use App\Http\Controllers\CepController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\TriagemController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'inicio')->name('inicio');
-Route::get('/solicitar', [PedidoController::class, 'create'])->name('pedido.create');
+Route::get('/solicitar', [TriagemController::class, 'vinculada'])->name('pedido.create');
+Route::get('/solicitar/nome-da-unidade', [TriagemController::class, 'nome'])->name('triagem.nome');
+Route::get('/solicitar/procure-uma-unidade', [TriagemController::class, 'procure'])->name('triagem.procure');
+Route::get('/solicitar/formulario', [PedidoController::class, 'create'])->name('pedido.formulario');
+Route::get('/cep/{cep}', [CepController::class, 'buscar'])->where('cep', '[0-9-]{8,9}')->middleware('throttle:30,1')->name('cep');
 Route::post('/pedido', [PedidoController::class, 'store'])->middleware('throttle:10,1')->name('pedido.store');
 Route::get('/pedido/{uuid}', [PedidoController::class, 'show'])->name('pedido.show');
 

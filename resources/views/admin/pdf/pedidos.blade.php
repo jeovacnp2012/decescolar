@@ -60,9 +60,9 @@
         @forelse ($filhos as $f)
             <tr>
                 <td><strong>{{ $f->protocolo ?? '—' }}</strong></td>
-                <td>{{ $f->nome }}<br><small>{{ $f->serie }} · nasc. {{ $f->data_nascimento->format('d/m/Y') }}</small></td>
-                <td>{{ $f->pedido->responsavel_nome }}<br><small>{{ \App\Models\AtestadoPedido::VINCULOS[$f->pedido->vinculo] ?? '' }}{{ $f->pedido->parentesco ? ' ('.$f->pedido->parentesco.')' : '' }} · CPF {{ $f->pedido->cpfMascarado() }}</small></td>
-                <td>{{ $f->pedido->unidade_nome }}{{ $f->pedido->acs_nome ? ' — ACS: '.$f->pedido->acs_nome : '' }}</td>
+                <td>{{ $f->nome }}<br><small>{{ $f->serie ? $f->serie.' · ' : '' }}nasc. {{ $f->data_nascimento->format('d/m/Y') }}</small></td>
+                <td>{{ $f->pedido->responsavel_nome }}<br><small>{{ $f->pedido->solicitanteRotulo() }} · {{ $f->pedido->documentoRotulo() }}</small></td>
+                <td>{{ $f->unidade_nome ?? $f->pedido->unidade_nome }}{{ $f->pedido->acs_nome ? ' — ACS: '.$f->pedido->acs_nome : '' }}</td>
                 <td>{{ $f->statusRotulo() }}</td>
                 <td>{{ $f->created_at->format('d/m/Y') }}</td>
             </tr>

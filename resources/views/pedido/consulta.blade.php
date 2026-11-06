@@ -3,13 +3,13 @@
 
 @section('conteudo')
     <h1>Consultar declaração vacinal</h1>
-    <p class="sub">Informe o CPF do responsável e o protocolo do pedido (exemplo: ATV000123).</p>
+    <p class="sub">Informe o CPF do responsável (ou o CNPJ, se o pedido foi de uma empresa) e o protocolo do pedido (exemplo: ATV000123).</p>
 
     <form method="POST" action="{{ route('consulta.buscar') }}" class="cartao" novalidate>
         @csrf
         <div class="campo {{ $errors->has('cpf') ? 'invalido' : '' }}">
-            <label for="cpf">CPF do responsável</label>
-            <input type="text" id="cpf" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off" data-mascara="cpf" required>
+            <label for="cpf">CPF ou CNPJ</label>
+            <input type="text" id="cpf" name="cpf" value="{{ old('cpf') }}" placeholder="CPF ou CNPJ" maxlength="18" autocomplete="off" autocapitalize="characters" data-mascara="doc" required>
             @error('cpf')<div class="erro">{{ $message }}</div>@enderror
         </div>
         <div class="campo {{ $errors->has('protocolo') ? 'invalido' : '' }}">

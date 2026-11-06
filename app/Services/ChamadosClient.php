@@ -58,27 +58,43 @@ class ChamadosClient
         $pedido->loadMissing('filhos');
         $filhos = $pedido->filhos->sortBy('id')->values();
 
-        $resp = $this->http()->post('/vaccination/requests', [
+        $preenchido = fn ($v) => $v !== null && $v !== '';
+        $legal = $pedido->tipo === AtestadoPedido::RESPONSAVEL_LEGAL;
+
+        $guardian = array_filter([
+            'type' => $pedido->tipo,
+            'name' => $pedido->responsavel_nome,
+            'cpf' => $pedido->cpf,
+            'cnpj' => $pedido->cnpj,
+            'phone' => $pedido->telefone,
+            'zip' => $pedido->cep,
+            'street' => $pedido->logradouro,
+            'number' => $pedido->numero,
+            'complement' => $pedido->complemento,
+            'district' => $pedido->bairro,
+            'city' => $pedido->cidade,
+            'state' => $pedido->uf,
+            'email' => $pedido->email,
+            'relationship' => $legal ? 'responsavel_legal' : $pedido->vinculo,
+            'relationship_other' => $legal ? $pedido->parentesco : null,
+            'birth_date' => $pedido->data_nascimento_responsavel,
+            'acs_name' => $pedido->acs_nome,
+        ], $preenchido);
+
+        $resp = $this->http()->post('/vaccination/requests', array_filter([
             'external_id' => $pedido->uuid,
+            // Empresa: cada funcionário leva a sua unidade (children[].sector_id); os demais usam a do pedido.
             'sector_id' => $pedido->unidade_id,
-            'guardian' => [
-                'name' => $pedido->responsavel_nome,
-                'cpf' => $pedido->cpf,
-                'phone' => $pedido->telefone,
-                'zip' => $pedido->cep,
-                'email' => $pedido->email,
-                'relationship' => $pedido->vinculo,
-                'relationship_other' => $pedido->parentesco,
-                'birth_date' => $pedido->data_nascimento_responsavel,
-                'acs_name' => $pedido->acs_nome,
-            ],
-            'children' => $filhos->map(fn (AtestadoFilho $f) => [
+            'guardian' => $guardian,
+            'children' => $filhos->map(fn (AtestadoFilho $f) => array_filter([
                 'name' => $f->nome,
                 'grade' => $f->serie,
                 'birth_date' => $f->data_nascimento->toDateString(),
                 'mother_name' => $f->nome_mae,
-            ])->all(),
-        ]);
+                'cpf' => $pedido->tipo === AtestadoPedido::FILHOS || $legal ? null : $f->cpf,
+                'sector_id' => $pedido->ehEmpresa() ? $f->unidade_id : null,
+            ], $preenchido))->all(),
+        ], fn ($v) => $v !== null));
 
         if (! $resp->successful()) {
             $msg = $resp->json('message') ?: 'resposta '.$resp->status();
@@ -97,7 +113,7 @@ class ChamadosClient
     /** Avisa o chamados que o responsável recebeu o PDF (POST /vaccination/requests/{protocolo}/served?cpf=) → Atendido. */
     public function avisarAtendido(AtestadoFilho $filho): bool
     {
-        $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/served?".http_build_query(['cpf' => $filho->pedido->cpf]));
+        $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/served?".http_build_query($this->identificacao($filho)));
 
         return $resp->successful();
     }
@@ -105,10 +121,18 @@ class ChamadosClient
     /** Avisa o chamados que o responsável cancelou o pedido (POST /vaccination/requests/{protocolo}/cancel?cpf=). Só 2xx conta como avisado. */
     public function avisarCancelamento(AtestadoFilho $filho): bool
     {
-        $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/cancel?".http_build_query(['cpf' => $filho->pedido->cpf]));
+        $resp = $this->http()->post("/vaccination/requests/{$filho->protocolo}/cancel?".http_build_query($this->identificacao($filho)));
 
         // 409 = a unidade já atendeu o pedido: o aviso não tem mais efeito, encerra o reenvio.
         return $resp->successful() || $resp->status() === 409 || $this->pedidoRemovido($resp);
+    }
+
+    /** Empresa se identifica pelo CNPJ; os demais pelo CPF (?cnpj= / ?cpf= nas rotas do chamados). */
+    private function identificacao(AtestadoFilho $filho): array
+    {
+        $p = $filho->pedido;
+
+        return $p->ehEmpresa() ? ['cnpj' => $p->cnpj] : ['cpf' => $p->cpf];
     }
 
     /**

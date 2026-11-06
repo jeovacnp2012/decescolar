@@ -148,3 +148,14 @@ select:focus-visible { outline: 3px solid rgba(179,211,83,.9); outline-offset: 1
 /* marcação de campos obrigatórios */
 .obrig { color: var(--erro, #c62828); font-weight: 800; margin-left: 2px; }
 .legenda-obrig { margin: 0 0 14px; font-size: 14px; color: #555; }
+
+/* triagem da unidade de saúde */
+.duas-opcoes { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.aviso-unidade { text-align: center; padding: 28px 20px; border-top: 6px solid var(--limao); }
+.aviso-unidade h1 { margin: 10px 0 8px; font-size: 1.35rem; }
+.aviso-unidade p { margin: 0 0 22px; font-size: 1.05rem; line-height: 1.5; color: var(--texto); }
+.aviso-icone { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: #e4f0e9; color: var(--verde); display: flex; align-items: center; justify-content: center; }
+
+/* cidade + UF lado a lado, mesmo no celular */
+.grade.cidade-uf { grid-template-columns: 1fr 96px; }
+input[readonly] { background: #eceff1; color: #555; }

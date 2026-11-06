@@ -10,9 +10,9 @@
         <div class="protocolo" style="margin-top:8px">{{ $filho->protocolo }}</div>
         <dl class="dados" style="margin-top:12px">
             <div><dt>Filho(a)</dt><dd>{{ $filho->nome }}</dd></div>
-            <div><dt>Série</dt><dd>{{ $filho->serie }}</dd></div>
-            <div><dt>Responsável</dt><dd>{{ $filho->pedido->responsavel_nome }} — CPF {{ $filho->pedido->cpfMascarado() }}</dd></div>
-            <div><dt>Unidade de saúde</dt><dd>{{ $filho->pedido->unidade_nome }}</dd></div>
+            @if ($filho->serie)<div><dt>Série</dt><dd>{{ $filho->serie }}</dd></div>@endif
+            <div><dt>Responsável</dt><dd>{{ $filho->pedido->responsavel_nome }} — {{ $filho->pedido->documentoRotulo() }}</dd></div>
+            <div><dt>Unidade de saúde</dt><dd>{{ $filho->unidade_nome ?? $filho->pedido->unidade_nome }}</dd></div>
         </dl>
     </section>
 

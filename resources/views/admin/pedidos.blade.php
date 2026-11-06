@@ -23,7 +23,7 @@
     <form method="GET" action="{{ route('admin.pedidos') }}" class="cartao filtros">
         <div class="campo">
             <label for="q">Buscar</label>
-            <input type="search" id="q" name="q" value="{{ $filtro['q'] }}" placeholder="Protocolo, nome, CPF ou e-mail" autocomplete="off">
+            <input type="search" id="q" name="q" value="{{ $filtro['q'] }}" placeholder="Protocolo, nome, CPF, CNPJ ou e-mail" autocomplete="off">
         </div>
         <div class="campo">
             <label for="unidade">Unidade de saúde</label>
@@ -44,11 +44,11 @@
             </select>
         </div>
         <div class="campo">
-            <label for="vinculo">Vínculo</label>
-            <select id="vinculo" name="vinculo">
+            <label for="tipo">Tipo de pedido</label>
+            <select id="tipo" name="tipo">
                 <option value="">Todos</option>
-                @foreach (AtestadoPedido::VINCULOS as $chave => $rotulo)
-                    <option value="{{ $chave }}" @selected($filtro['vinculo'] === $chave)>{{ $rotulo }}</option>
+                @foreach (AtestadoPedido::TIPOS as $chave => $rotulo)
+                    <option value="{{ $chave }}" @selected($filtro['tipo'] === $chave)>{{ $rotulo }}</option>
                 @endforeach
             </select>
         </div>
@@ -87,8 +87,8 @@
                     <tr>
                         <td data-label="Protocolo"><a class="link" href="{{ route('admin.pedido', $f) }}"><strong>{{ $f->protocolo ?? '—' }}</strong></a></td>
                         <td data-label="Filho(a)">{{ $f->nome }}<small>{{ $f->serie }}</small></td>
-                        <td data-label="Responsável">{{ $f->pedido->responsavel_nome }}<small>{{ AtestadoPedido::VINCULOS[$f->pedido->vinculo] ?? '' }}{{ $f->pedido->parentesco ? ' ('.$f->pedido->parentesco.')' : '' }} · CPF {{ $f->pedido->cpfMascarado() }}</small></td>
-                        <td data-label="Unidade">{{ $f->pedido->unidade_nome }}</td>
+                        <td data-label="Responsável">{{ $f->pedido->responsavel_nome }}<small>{{ $f->pedido->solicitanteRotulo() }} · {{ $f->pedido->documentoRotulo() }}</small></td>
+                        <td data-label="Unidade">{{ $f->unidade_nome ?? $f->pedido->unidade_nome }}</td>
                         <td data-label="Situação"><span class="selo {{ $f->status === 'aguardando' ? '' : $f->status }}">{{ $f->statusRotulo() }}</span></td>
                         <td data-label="Pedido em">{{ $f->created_at->format('d/m/Y H:i') }}</td>
                     </tr>

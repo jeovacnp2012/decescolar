@@ -3,9 +3,9 @@
 
 @section('conteudo')
     <h1>Pedido registrado!</h1>
-    <p class="sub">Enviamos seu pedido para a unidade <strong>{{ $pedido->unidade_nome }}</strong>. Quando a declaração vacinal for emitida, avisaremos em <strong>{{ $pedido->email }}</strong>.</p>
+    <p class="sub">{{ $pedido->ehEmpresa() ? "Enviamos o pedido às unidades de saúde dos funcionários." : "Enviamos seu pedido para a unidade" }}{!! $pedido->ehEmpresa() ? "" : " <strong>".e($pedido->unidade_nome)."</strong>." !!} Quando a declaração vacinal for emitida, avisaremos em <strong>{{ $pedido->email }}</strong>.</p>
 
-    <div class="alerta info">Guarde os números de protocolo abaixo. Com o seu CPF e o protocolo você consulta e baixa a declaração a qualquer momento.</div>
+    <div class="alerta info">Guarde os números de protocolo abaixo. Com {{ $pedido->ehEmpresa() ? "o CNPJ" : "o seu CPF" }} e o protocolo você consulta e baixa a declaração a qualquer momento.</div>
 
     @foreach ($pedido->filhos as $filho)
         <section class="cartao">
@@ -13,8 +13,8 @@
             <h2 style="margin-top:10px">{{ $filho->nome }}</h2>
             <div class="protocolo">{{ $filho->protocolo }}</div>
             <dl class="dados" style="margin-top:12px">
-                <div><dt>Série</dt><dd>{{ $filho->serie }}</dd></div>
-                <div><dt>Unidade de saúde</dt><dd>{{ $pedido->unidade_nome }}</dd></div>
+                @if ($filho->serie)<div><dt>Série</dt><dd>{{ $filho->serie }}</dd></div>@endif
+                <div><dt>Unidade de saúde</dt><dd>{{ $filho->unidade_nome ?? $pedido->unidade_nome }}</dd></div>
             </dl>
             <p style="margin:14px 0 0"><a class="btn contorno" href="{{ route('atestado.show', $filho->token) }}">Acompanhar este pedido</a></p>
         </section>
