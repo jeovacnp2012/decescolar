@@ -31,11 +31,18 @@ class FluxoAtestadoTest extends TestCase
 
     private function fakeChamados(): void
     {
+        $n = 0;
         Http::fake([
-            '*/vaccination/units' => Http::response(['data' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL'], ['id' => 4, 'name' => 'ESF ALTO DA COLINA']]]),
-            // um protocolo por item de children[] (ATV000001, ATV000002...)
-            '*/vaccination/requests' => fn ($r) => Http::response(['data' => collect($r['children'])->keys()
-                ->map(fn ($i) => ['protocol' => 'ATV'.str_pad($i + 1, 6, '0', STR_PAD_LEFT)])->all()], 201),
+            '*/vaccination/units' => Http::response(['units' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL'], ['id' => 4, 'name' => 'ESF ALTO DA COLINA']]]),
+            // formato do UYSI: um protocolo por item de children[], contínuo entre os pedidos (ATV000001, ATV000002...)
+            '*/vaccination/requests' => function ($r) use (&$n) {
+                $dados = [];
+                foreach ($r['children'] as $_) {
+                    $dados[] = ['protocol' => 'ATV'.str_pad(++$n, 6, '0', STR_PAD_LEFT), 'child_name' => 'X'];
+                }
+
+                return Http::response(['requests' => $dados], 201);
+            },
         ]);
     }
 
@@ -149,10 +156,10 @@ class FluxoAtestadoTest extends TestCase
         $this->assertStringNotContainsString('1960', (string) \DB::table('atestado_pedidos')->value('data_nascimento_responsavel'));
 
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/vaccination/requests')
-            && $r['guardian']['type'] === 'responsavel_legal'
+            && $r['guardian_type'] === 'responsavel_legal'
             && $r['guardian']['relationship'] === 'responsavel_legal' && $r['guardian']['relationship_other'] === 'avó'
-            && $r['guardian']['birth_date'] === '1960-02-03' && $r['guardian']['acs_name'] === 'Joana Souza'
-            && ! array_key_exists('school', $r['guardian']));
+            && $r['guardian']['birth_date'] === '1960-02-03' && $r['children'][0]['acs_name'] === 'Joana Souza'
+            && ! array_key_exists('acs_name', $r['guardian']) && ! array_key_exists('type', $r['guardian']) && ! array_key_exists('sector_id', $r->data()));
     }
 
     public function test_pedido_com_varios_filhos_e_enviado_ao_chamados_e_guarda_protocolos(): void
@@ -168,7 +175,7 @@ class FluxoAtestadoTest extends TestCase
         $this->assertStringNotContainsString('52998224725', (string) \DB::table('atestado_pedidos')->value('cpf'));
 
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/vaccination/requests')
-            && $r['guardian']['cpf'] === '52998224725' && count($r['children']) === 2 && $r['sector_id'] === 8);
+            && $r['guardian']['cpf'] === '52998224725' && count($r['children']) === 2 && $r['unit_id'] === 8 && $r['guardian_type'] === 'filhos');
     }
 
     public function test_cpf_invalido_unidade_fora_da_lista_e_sem_checkbox_sao_recusados(): void
@@ -185,8 +192,8 @@ class FluxoAtestadoTest extends TestCase
     public function test_falha_no_chamados_nao_deixa_pedido_pela_metade(): void
     {
         Http::fake([
-            '*/vaccination/units' => Http::response(['data' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL']]]),
-            '*/vaccination/requests' => Http::response(['message' => 'erro'], 500),
+            '*/vaccination/units' => Http::response(['units' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL']]]),
+            '*/vaccination/requests' => Http::response(['error' => ['code' => 'internal', 'message' => 'erro']], 500),
         ]);
         $this->post('/pedido', $this->dadosValidos())->assertSessionHasErrors('geral');
         $this->assertSame(0, AtestadoPedido::count());
@@ -432,10 +439,10 @@ segundo", Storage::disk('local')->get($novo));
         $this->assertStringNotContainsString('52998224725', (string) \DB::table('atestado_filhos')->value('cpf'));
 
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/vaccination/requests')
-            && $r['guardian']['type'] === 'proprio' && count($r['children']) === 1
+            && $r['guardian_type'] === 'proprio' && count($r['children']) === 1
             && $r['children'][0]['cpf'] === '52998224725' && $r['children'][0]['name'] === 'Ana Paula Souza'
             && ! isset($r['children'][0]['grade']) && ! isset($r['children'][0]['mother_name'])
-            && $r['guardian']['state'] === 'MT' && $r['guardian']['street'] === 'Rua das Acácias' && $r['sector_id'] === 8);
+            && $r['guardian']['state'] === 'MT' && $r['guardian']['street'] === 'Rua das Acácias' && $r['unit_id'] === 8);
     }
 
     public function test_empresa_usa_cnpj_uma_unidade_por_funcionario_e_consulta_pelo_cnpj(): void
@@ -451,12 +458,23 @@ segundo", Storage::disk('local')->get($novo));
         $this->assertSame([8, 4], $p->filhos()->orderBy('id')->pluck('unidade_id')->map(fn ($v) => (int) $v)->all());
         $this->assertSame(['ATV000001', 'ATV000002'], $p->filhos()->orderBy('id')->pluck('protocolo')->all());
 
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/vaccination/requests')
-            && $r['guardian']['type'] === 'empresa' && $r['guardian']['cnpj'] === '12345678000195' && $r['guardian']['name'] === 'Indústria Exemplo Ltda'
-            && ! isset($r['guardian']['cpf']) && ! isset($r['guardian']['birth_date']) && ! isset($r['guardian']['relationship'])
-            && ! isset($r['sector_id'])
-            && $r['children'][0]['sector_id'] === 8 && $r['children'][1]['sector_id'] === 4
-            && $r['children'][0]['cpf'] === '52998224725' && $r['children'][1]['cpf'] === '11144477735');
+        // o UYSI recebe uma unidade por pedido: duas unidades = dois pedidos, cada um com o seu external_id
+        $enviados = Http::recorded(fn ($req) => str_ends_with($req->url(), '/vaccination/requests'))->values();
+        $this->assertCount(2, $enviados);
+        [$um, $dois] = [$enviados[0][0], $enviados[1][0]];
+        $this->assertSame([8, 4], [$um['unit_id'], $dois['unit_id']]);
+        $this->assertSame([$p->uuid.'-1', $p->uuid.'-2'], [$um['external_id'], $dois['external_id']]);
+        foreach ([$um, $dois] as $r) {
+            $this->assertSame('empresa', $r['guardian_type']);
+            $this->assertSame('12345678000195', $r['guardian']['cnpj']);
+            $this->assertSame('Indústria Exemplo Ltda', $r['guardian']['name']);
+            $this->assertArrayNotHasKey('cpf', $r['guardian']);
+            $this->assertArrayNotHasKey('birth_date', $r['guardian']);
+            $this->assertArrayNotHasKey('relationship', $r['guardian']);
+            $this->assertCount(1, $r['children']);
+        }
+        $this->assertSame('52998224725', $um['children'][0]['cpf']);
+        $this->assertSame('11144477735', $dois['children'][0]['cpf']);
 
         // consulta pelo CNPJ (com ou sem máscara); CPF de funcionário não serve
         $filho = AtestadoFilho::where('protocolo', 'ATV000002')->first();
@@ -506,6 +524,103 @@ segundo", Storage::disk('local')->get($novo));
         $d2 = $dv([...$v, $d1], [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
         $this->assertTrue(\App\Rules\Cnpj::valido($base.$d1.$d2));
         $this->assertFalse(\App\Rules\Cnpj::valido($base.$d1.(($d2 + 1) % 10)));
+    }
+
+    public function test_aviso_pronto_em_json_do_uysi_busca_o_pdf_com_peek_e_nao_marca_baixado(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        Http::fake(['*/vaccination/requests/ATV000001/certificate*' => Http::response("%PDF-1.4\nvindo do uysi", 200, ['Content-Type' => 'application/pdf'])]);
+
+        $corpo = ['event' => 'certificate_ready', 'protocol' => 'ATV000001', 'consult_url' => 'https://uysi.test/consulta/ATV000001'];
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/pronto', $corpo)->assertOk()->assertJsonPath('data.status', 'pronto');
+
+        $filho = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        $this->assertSame("%PDF-1.4\nvindo do uysi", Storage::disk('local')->get($filho->arquivo));
+        $this->assertNull($filho->baixado_em);
+        // buscou com ?peek=1: o UYSI só marca atendido quando o DecEscola avisa (responsável baixou)
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'ATV000001/certificate') && str_contains($r->url(), 'peek=1') && $r->method() === 'GET');
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/served'));
+        // repetir o aviso substitui a cópia
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/pronto', $corpo)->assertOk();
+    }
+
+    public function test_aviso_pronto_em_json_sem_o_evento_certo_ou_sem_o_uysi_nao_vira_200(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+
+        // JSON de outro evento e sem arquivo: continua exigindo o PDF
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/pronto', ['event' => 'outra_coisa'])->assertStatus(422);
+        // protocolo desconhecido: 404 antes de buscar qualquer coisa
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV999999/pronto', ['event' => 'certificate_ready'])->assertStatus(404);
+        // UYSI sem o atestado: 502, para o UYSI repetir o aviso depois
+        Http::fake(['*/vaccination/requests/ATV000001/certificate*' => Http::response(['error' => ['code' => 'not_ready']], 409)]);
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/pronto', ['event' => 'certificate_ready'])->assertStatus(502);
+        $this->assertSame('aguardando', AtestadoFilho::where('protocolo', 'ATV000001')->value('status'));
+    }
+
+    public function test_aviso_de_cancelamento_do_uysi_sem_motivo_cancela(): void
+    {
+        $this->fakeChamados();
+        $this->post('/pedido', $this->dadosValidos());
+        $corpo = ['event' => 'request_canceled', 'protocol' => 'ATV000001', 'consult_url' => 'https://uysi.test/consulta/ATV000001'];
+        $this->withToken('token-decescolar')->postJson('/api/v1/atestados/ATV000001/cancelado', $corpo)->assertOk()->assertJsonPath('data.status', 'cancelado');
+        $filho = AtestadoFilho::where('protocolo', 'ATV000001')->first();
+        $this->assertSame('unidade', $filho->cancelado_por);
+        $this->assertNull($filho->cancelado_motivo);
+    }
+
+    public function test_mais_de_dez_pessoas_na_mesma_unidade_viram_pedidos_de_ate_dez(): void
+    {
+        $this->fakeChamados();
+        $f = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $f[] = ['nome' => "Funcionario $i", 'data_nascimento' => '1990-01-01', 'cpf' => $this->cpfValido($i), 'nome_mae' => 'Mae', 'unidade_id' => 8];
+        }
+        $this->post('/pedido', $this->dadosEmpresa(['funcionarios' => $f]))->assertSessionHasNoErrors();
+
+        $enviados = Http::recorded(fn ($req) => str_ends_with($req->url(), '/vaccination/requests'))->values();
+        $this->assertSame([10, 2], [count($enviados[0][0]['children']), count($enviados[1][0]['children'])]);
+        $p = AtestadoPedido::firstOrFail();
+        $this->assertSame(12, $p->filhos()->whereNotNull('protocolo')->count());
+        $this->assertSame('ATV000012', $p->filhos()->orderBy('id')->get()->last()->protocolo);
+    }
+
+    public function test_se_o_segundo_pedido_falha_o_primeiro_e_cancelado_no_uysi(): void
+    {
+        $n = 0;
+        Http::fake([
+            '*/vaccination/units' => Http::response(['units' => [['id' => 8, 'name' => 'PSF PARQUE DO SOL'], ['id' => 4, 'name' => 'ESF ALTO DA COLINA']]]),
+            '*/vaccination/requests/*/cancel*' => Http::response(['status' => 'canceled']),
+            '*/vaccination/requests' => function ($r) use (&$n) {
+                return ++$n === 1
+                    ? Http::response(['requests' => [['protocol' => 'ATV000001']]], 201)
+                    : Http::response(['error' => ['code' => 'validation', 'message' => 'Unidade inválida.']], 422);
+            },
+        ]);
+        $this->post('/pedido', $this->dadosEmpresa())->assertSessionHasErrors('geral');
+        $this->assertSame(0, AtestadoPedido::count());
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'ATV000001/cancel'));
+    }
+
+    /** CPF válido determinístico (para gerar vários funcionários distintos). */
+    private function cpfValido(int $i): string
+    {
+        $base = str_pad((string) (100000000 + $i * 7919), 9, '0', STR_PAD_LEFT);
+        $digito = function (string $n, int $peso): int {
+            $soma = 0;
+            foreach (str_split($n) as $k => $c) {
+                $soma += (int) $c * ($peso - $k);
+            }
+            $r = $soma % 11;
+
+            return $r < 2 ? 0 : 11 - $r;
+        };
+        $d1 = $digito($base, 10);
+        $d2 = $digito($base.$d1, 11);
+
+        return $base.$d1.$d2;
     }
 
     public function test_cep_e_consultado_no_viacep_pelo_servidor(): void

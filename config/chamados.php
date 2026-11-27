@@ -1,7 +1,7 @@
 <?php
 
 return [
-    // API do chamados-multi-tenant (tenant de Nova Mutum). Token Sanctum do usuário de integração.
+    // API de integração de vacinação do UYSI Service (…/api/v1/integration). Token "uysi_…" gerado no UYSI.
     'url' => rtrim((string) env('CHAMADOS_API_URL', ''), '/'),
     'token' => env('CHAMADOS_API_TOKEN'),
     'timeout' => (int) env('CHAMADOS_API_TIMEOUT', 15),

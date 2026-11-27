@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AtestadoFilho;
 use App\Services\AtestadoService;
+use App\Services\ChamadosClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,13 +14,19 @@ use Throwable;
 class AtestadoProntoController extends Controller
 {
     /**
-     * POST /api/v1/atestados/{protocolo}/pronto — o chamados entrega o PDF emitido pela unidade de saúde.
-     * multipart/form-data: certificate (PDF, até 10 MB), protocol, child_name, guardian_cpf, unit, sent_at.
-     * Qualquer 2xx = entregue. O mesmo protocolo pode chegar de novo: substitui o PDF.
+     * POST /api/v1/atestados/{protocolo}/pronto — a unidade de saúde emitiu o atestado.
+     * Dois formatos: (1) UYSI Service: JSON {event:"certificate_ready", protocol, consult_url}, sem PDF; o DecEscola busca o PDF
+     * no UYSI com ?peek=1 (não marca como baixado). (2) multipart/form-data com certificate (PDF, até 10 MB), como no sistema antigo.
+     * Qualquer 2xx = entregue. O mesmo protocolo pode chegar de novo: substitui o PDF. Se a busca falhar, responde 502 e o UYSI repete depois.
      */
-    public function store(Request $request, string $protocolo, AtestadoService $servico): JsonResponse
+    public function store(Request $request, string $protocolo, AtestadoService $servico, ChamadosClient $chamados): JsonResponse
     {
-        $request->validate(['certificate' => ['required', 'file', 'mimes:pdf', 'max:10240']]);
+        $comArquivo = $request->hasFile('certificate');
+        if ($comArquivo) {
+            $request->validate(['certificate' => ['required', 'file', 'mimes:pdf', 'max:10240']]);
+        } elseif (! $request->isJson() || $request->input('event') !== 'certificate_ready') {
+            $request->validate(['certificate' => ['required', 'file', 'mimes:pdf', 'max:10240']]);
+        }
 
         $filho = AtestadoFilho::with('pedido')->where('protocolo', strtoupper($protocolo))->first();
         if (! $filho) {
@@ -31,7 +38,15 @@ class AtestadoProntoController extends Controller
         }
 
         try {
-            $filho = $servico->receberPdf($filho, file_get_contents($request->file('certificate')->getRealPath()));
+            $pdf = $comArquivo ? file_get_contents($request->file('certificate')->getRealPath()) : $chamados->baixarAtestado($filho->protocolo);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Não foi possível buscar o atestado: '.$e->getMessage()], 502);
+        }
+
+        try {
+            $filho = $servico->receberPdf($filho, $pdf);
         } catch (Throwable $e) {
             report($e);
 
@@ -43,7 +58,7 @@ class AtestadoProntoController extends Controller
 
     /**
      * POST /api/v1/atestados/{protocolo}/cancelado — a unidade de saúde excluiu o pedido no chamados.
-     * JSON: protocol, external_id, status="canceled", message, reason, child_name, guardian_cpf, unit, canceled_at.
+     * JSON: no UYSI, {event:"request_canceled", protocol, consult_url}; no sistema antigo também reason e canceled_at (todos opcionais).
      * O chamados só exclui se receber 2xx; por isso é idempotente e responde 2xx também para protocolo desconhecido ou já cancelado.
      */
     public function cancelado(Request $request, string $protocolo): JsonResponse
